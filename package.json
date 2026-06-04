@@ -1,0 +1,78 @@
+{
+  "name": "ai-agent-house",
+  "version": "0.1.0",
+  "description": "A lightweight framework for multi-AI-agent cohabitation — where AI agents live together, share memory, and collaborate like roommates. 🏠🤖",
+  "keywords": [
+    "ai",
+    "agent",
+    "multi-agent",
+    "mcp",
+    "llm",
+    "openai",
+    "anthropic",
+    "google",
+    "framework",
+    "orchestration",
+    "collaboration"
+  ],
+  "author": "shinpapa",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "ai-house": "./dist/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./agents": {
+      "import": "./dist/agents/index.js",
+      "types": "./dist/agents/index.d.ts"
+    },
+    "./memory": {
+      "import": "./dist/memory/index.js",
+      "types": "./dist/memory/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "nanoid": "^5.1.5",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "eslint": "^9.22.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shinpapa/ai-agent-house.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shinpapa/ai-agent-house/issues"
+  },
+  "homepage": "https://github.com/shinpapa/ai-agent-house#readme"
+}
