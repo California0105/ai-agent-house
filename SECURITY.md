@@ -6,6 +6,13 @@
 | ------- | ------------------ |
 | 0.1.x   | ✅ Current release |
 
+## AI Security & Prompt Injection
+
+As `ai-agent-house` is a framework for orchestrating LLM-based agents, developers must be aware of inherent risks associated with Large Language Models, particularly **Prompt Injection**.
+
+- **Trust Boundary**: The `task` string and bulletin board `messages` are passed directly into the LLM context. If your application accepts untrusted user input, malicious users could craft inputs to override system prompts (Prompt Injection or Jailbreaking).
+- **Mitigation**: We recommend sanitizing or validating user input *before* passing it as a `task` to the `House` or individual `Agent`s. Do not grant agents capabilities to execute sensitive system commands or access private databases without strict human-in-the-loop validation.
+
 ## Reporting a Vulnerability
 
 If you discover a security vulnerability in ai-agent-house, please report it responsibly:
