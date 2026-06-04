@@ -11,8 +11,8 @@
 If you discover a security vulnerability in ai-agent-house, please report it responsibly:
 
 1. **DO NOT** open a public GitHub issue for security vulnerabilities
-2. Email: [security@shinpapa.dev](mailto:security@shinpapa.dev)
-3. Or use [GitHub Security Advisories](https://github.com/shinpapa/ai-agent-house/security/advisories/new)
+2. Email: [security@California0105.dev](mailto:security@California0105.dev)
+3. Or use [GitHub Security Advisories](https://github.com/California0105/ai-agent-house/security/advisories/new)
 
 ### What to include
 

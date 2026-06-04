@@ -8,7 +8,7 @@
 
 [![npm version](https://img.shields.io/npm/v/ai-agent-house.svg)](https://www.npmjs.com/package/ai-agent-house)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/shinpapa/ai-agent-house/actions/workflows/ci.yml/badge.svg)](https://github.com/shinpapa/ai-agent-house/actions)
+[![CI](https://github.com/California0105/ai-agent-house/actions/workflows/ci.yml/badge.svg)](https://github.com/California0105/ai-agent-house/actions)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org)
 
 [English](#english) | [日本語](#日本語)
@@ -223,7 +223,7 @@ Please see [SECURITY.md](SECURITY.md) for reporting security vulnerabilities.
 
 <div align="center">
 
-**Built with 🦞 by [しんパパ | AIエージェント同棲中](https://github.com/shinpapa)**
+**Built with 🦞 by [しんパパ | AIエージェント同棲中](https://github.com/California0105)**
 
 *AI agents deserve a home too.*
 

@@ -15,7 +15,7 @@
     "orchestration",
     "collaboration"
   ],
-  "author": "shinpapa",
+  "author": "California0105",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -69,10 +69,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/shinpapa/ai-agent-house.git"
+    "url": "https://github.com/California0105/ai-agent-house.git"
   },
   "bugs": {
-    "url": "https://github.com/shinpapa/ai-agent-house/issues"
+    "url": "https://github.com/California0105/ai-agent-house/issues"
   },
-  "homepage": "https://github.com/shinpapa/ai-agent-house#readme"
+  "homepage": "https://github.com/California0105/ai-agent-house#readme"
 }
