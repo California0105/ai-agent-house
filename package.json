@@ -1,6 +1,6 @@
 {
   "name": "ai-agent-house",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A lightweight framework for multi-AI-agent cohabitation — where AI agents live together, share memory, and collaborate like roommates. 🏠🤖",
   "keywords": [
     "ai",
@@ -69,7 +69,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/California0105/ai-agent-house.git"
+    "url": "git+https://github.com/California0105/ai-agent-house.git"
   },
   "bugs": {
     "url": "https://github.com/California0105/ai-agent-house/issues"
