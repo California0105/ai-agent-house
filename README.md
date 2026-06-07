@@ -30,7 +30,8 @@ Think of it as a **smart home for AI agents** 🏠🤖
 - 🏠 **House Model** — Manage multiple agents in a single "house" environment
 - 📋 **Bulletin Board** — Shared memory system for inter-agent communication
 - 🔌 **Multi-Provider** — Works with OpenAI, Anthropic, Google, and local LLMs
-- 🧩 **MCP Compatible** — Built-in Model Context Protocol support
+- 🔧 **Tool Calling** — Equip agents with web search, file readers, and custom tools
+- 🚀 **Parallel Execution** — Agents can brainstorm simultaneously
 - 🎭 **Role-Based Agents** — Secretary, Writer, Researcher, and custom agents
 - ⚡ **Lightweight** — Minimal dependencies, maximum flexibility
 - 📦 **CLI & Library** — Use as a CLI tool or import as a library
@@ -157,7 +158,8 @@ ai-house board
 - 🏠 **ハウスモデル** — 複数エージェントを一つの「家」で管理
 - 📋 **掲示板システム** — エージェント間の共有メモリ＆コミュニケーション
 - 🔌 **マルチプロバイダー** — OpenAI・Anthropic・Google・ローカルLLM対応
-- 🧩 **MCP対応** — Model Context Protocol（標準プロトコル）ビルトインサポート
+- 🔧 **ツール呼び出し** — ウェブ検索やファイル読み込みなどのツールを装備
+- 🚀 **並列実行** — エージェント同士が同時にブレインストーミング可能
 - 🎭 **役割ベース** — 秘書・ライター・リサーチャー＋カスタムエージェント
 - ⚡ **軽量設計** — 最小限の依存関係で最大限の柔軟性
 - 📦 **CLI＆ライブラリ** — コマンドラインツールとしてもライブラリとしても利用可能
