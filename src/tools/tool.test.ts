@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 import { ToolRegistry } from "./tool-registry.js";
-import { toolsToPrompt, parseToolCall } from "./tool.js";
 import type { Tool } from "./tool.js";
 import { createWebSearchTool } from "./web-search-tool.js";
 
@@ -49,53 +48,7 @@ describe("ToolRegistry", () => {
   });
 });
 
-describe("toolsToPrompt", () => {
-  it("should return empty string for no tools", () => {
-    expect(toolsToPrompt([])).toBe("");
-  });
 
-  it("should generate prompt with tool descriptions", () => {
-    const prompt = toolsToPrompt([mockTool]);
-    expect(prompt).toContain("mock_tool");
-    expect(prompt).toContain("A mock tool for testing");
-    expect(prompt).toContain("input");
-    expect(prompt).toContain("(required)");
-  });
-});
-
-describe("parseToolCall", () => {
-  it("should parse JSON block with tool call", () => {
-    const text = 'Some text\n```json\n{"tool": "http_request", "params": {"url": "https://example.com"}}\n```';
-    const result = parseToolCall(text);
-    expect(result).toEqual({
-      tool: "http_request",
-      params: { url: "https://example.com" },
-    });
-  });
-
-  it("should parse without params", () => {
-    const text = '```json\n{"tool": "file_reader"}\n```';
-    const result = parseToolCall(text);
-    expect(result).toEqual({
-      tool: "file_reader",
-      params: {},
-    });
-  });
-
-  it("should return null for no tool call", () => {
-    const text = "Just a normal response without any tool calls.";
-    expect(parseToolCall(text)).toBeNull();
-  });
-
-  it("should handle inline JSON", () => {
-    const text = 'I will use {"tool": "web_search", "params": {"query": "test"}} to find info.';
-    const result = parseToolCall(text);
-    expect(result).toEqual({
-      tool: "web_search",
-      params: { query: "test" },
-    });
-  });
-});
 
 describe("createWebSearchTool", () => {
   it("should create a tool with a search provider", async () => {

@@ -14,10 +14,9 @@ import type {
   BoardMessage,
   ProviderConfig,
 } from "./types.js";
-import type { LLMProvider, LLMResponse } from "../providers/provider.js";
+import type { LLMProvider, LLMResponse, ChatMessage } from "../providers/provider.js";
 import type { Tool } from "../tools/tool.js";
 import { ToolRegistry } from "../tools/tool-registry.js";
-import { toolsToPrompt, parseToolCall } from "../tools/tool.js";
 import { ToolError } from "./errors.js";
 
 /** Maximum number of tool-calling iterations per task */
@@ -181,60 +180,58 @@ export abstract class Agent {
     if (!this._provider) return null;
 
     const messages = this.buildPrompt(task, context);
-
-    // Add tool descriptions to the prompt if tools are available
-    const tools = this._toolRegistry?.list() ?? [];
-    if (tools.length > 0) {
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg) {
-        lastMsg.content += "\n\n" + toolsToPrompt(tools);
-      }
-    }
+    const tools = this.getTools();
 
     // LLM call with tool-calling loop
-    let response = await this._provider.generate(messages);
+    let response = await this._provider.generate(messages, { tools });
     this._lastResponse = response;
 
-    // Handle tool calls iteratively
-    if (tools.length > 0 && this._toolRegistry) {
-      let iterations = 0;
-      let toolCall = parseToolCall(response.content);
+    let iterations = 0;
+    while (response.tool_calls && response.tool_calls.length > 0 && iterations < MAX_TOOL_ITERATIONS) {
+      if (!this._toolRegistry) break;
 
-      while (toolCall && iterations < MAX_TOOL_ITERATIONS) {
-        const tool = this._toolRegistry.get(toolCall.tool);
-        if (!tool) {
-          // Unknown tool, break out
-          break;
-        }
+      messages.push({
+        role: "assistant",
+        content: response.content || "",
+        tool_calls: response.tool_calls,
+      });
 
+      // Execute all requested tool calls in parallel
+      const toolPromises = response.tool_calls.map(async (toolCall) => {
+        const tool = this._toolRegistry!.get(toolCall.function.name);
         let toolResult: string;
-        try {
-          toolResult = await tool.execute(toolCall.params);
-        } catch (error) {
-          toolResult =
-            error instanceof ToolError
-              ? error.message
-              : `Error: ${error instanceof Error ? error.message : String(error)}`;
+        
+        if (!tool) {
+          toolResult = `Error: Tool '${toolCall.function.name}' not found.`;
+        } else {
+          try {
+            const args = toolCall.function.arguments ? JSON.parse(toolCall.function.arguments) : {};
+            toolResult = await tool.execute(args);
+          } catch (error) {
+            toolResult =
+              error instanceof ToolError
+                ? error.message
+                : `Error: ${error instanceof Error ? error.message : String(error)}`;
+          }
         }
 
-        // Feed tool result back to LLM
-        messages.push({
-          role: "assistant",
-          content: response.content,
-        });
-        messages.push({
-          role: "user",
-          content: `Tool "${toolCall.tool}" returned:\n${toolResult}`,
-        });
+        return {
+          role: "tool" as const,
+          tool_call_id: toolCall.id,
+          name: toolCall.function.name,
+          content: toolResult,
+        };
+      });
 
-        response = await this._provider.generate(messages);
-        this._lastResponse = response;
-        iterations++;
-        toolCall = parseToolCall(response.content);
-      }
+      const toolMessages = await Promise.all(toolPromises);
+      messages.push(...toolMessages);
+
+      response = await this._provider.generate(messages, { tools });
+      this._lastResponse = response;
+      iterations++;
     }
 
-    return response.content;
+    return response.content || "";
   }
 
   /**
@@ -264,7 +261,7 @@ export abstract class Agent {
   buildPrompt(
     task: string,
     context: BoardMessage[]
-  ): Array<{ role: "system" | "user" | "assistant"; content: string }> {
+  ): ChatMessage[] {
     const contextSummary =
       context.length > 0
         ? context

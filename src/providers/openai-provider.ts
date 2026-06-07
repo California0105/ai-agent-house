@@ -7,7 +7,7 @@
  */
 
 import type { ProviderConfig } from "../core/types.js";
-import type { ChatMessage, LLMProvider, LLMResponse } from "./provider.js";
+import type { GenerateOptions, ChatMessage, LLMProvider, LLMResponse, ToolCall } from "./provider.js";
 import {
   ProviderError,
   RateLimitError,
@@ -84,34 +84,88 @@ export class OpenAIProvider implements LLMProvider {
     return this.client;
   }
 
-  async generate(messages: ChatMessage[]): Promise<LLMResponse> {
+  async generate(messages: ChatMessage[], options?: GenerateOptions): Promise<LLMResponse> {
     return this.breaker.execute(() =>
-      withRetry(() => this._generate(messages), {
+      withRetry(() => this._generate(messages, options), {
         maxRetries: 3,
         baseDelayMs: 1000,
       })
     );
   }
 
-  private async _generate(messages: ChatMessage[]): Promise<LLMResponse> {
+  private async _generate(messages: ChatMessage[], options?: GenerateOptions): Promise<LLMResponse> {
     const client = await this.getClient();
 
     try {
-      const completion = await client.chat.completions.create({
-        model: this.modelName,
-        messages: messages.map((m: ChatMessage) => ({
+      const openaiMessages = messages.map((m: ChatMessage) => {
+        const msg: any = {
           role: m.role,
           content: m.content,
-        })),
-        temperature: this.temperature,
-        ...(this.maxTokens ? { max_tokens: this.maxTokens } : {}),
+        };
+        if (m.name) msg.name = m.name;
+        if (m.tool_calls) {
+          msg.tool_calls = m.tool_calls.map(tc => ({
+            id: tc.id,
+            type: tc.type,
+            function: tc.function,
+          }));
+        }
+        if (m.tool_call_id) {
+          msg.tool_call_id = m.tool_call_id;
+        }
+        return msg;
       });
 
+      const request: any = {
+        model: this.modelName,
+        messages: openaiMessages,
+        temperature: this.temperature,
+      };
+
+      if (this.maxTokens) {
+        request.max_tokens = this.maxTokens;
+      }
+
+      if (options?.tools && options.tools.length > 0) {
+        request.tools = options.tools.map((tool) => {
+          const properties: Record<string, any> = {};
+          const required: string[] = [];
+
+          for (const [key, param] of Object.entries(tool.parameters)) {
+            properties[key] = {
+              type: param.type,
+              description: param.description,
+            };
+            if (param.required) {
+              required.push(key);
+            }
+          }
+
+          return {
+            type: "function",
+            function: {
+              name: tool.name,
+              description: tool.description,
+              parameters: {
+                type: "object",
+                properties,
+                required,
+                additionalProperties: false,
+              },
+            },
+          };
+        });
+      }
+
+      const completion = await client.chat.completions.create(request);
+
       const choice = completion.choices?.[0];
-      const content = choice?.message?.content ?? "";
+      const content = choice?.message?.content ?? undefined;
+      const tool_calls = choice?.message?.tool_calls as ToolCall[] | undefined;
 
       return {
         content,
+        tool_calls,
         model: completion.model ?? this.modelName,
         usage: completion.usage
           ? {

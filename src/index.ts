@@ -96,7 +96,6 @@ export { SqliteMemoryProvider } from "./memory/sqlite-memory-provider.js";
 
 // Tools
 export type { Tool, ToolParameter } from "./tools/tool.js";
-export { toolsToPrompt, parseToolCall } from "./tools/tool.js";
 export { ToolRegistry } from "./tools/tool-registry.js";
 export { httpTool } from "./tools/http-tool.js";
 export { fileReaderTool } from "./tools/file-reader-tool.js";

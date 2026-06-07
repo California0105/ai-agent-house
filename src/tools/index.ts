@@ -6,7 +6,6 @@
  */
 
 export type { Tool, ToolParameter } from "./tool.js";
-export { toolsToPrompt, parseToolCall } from "./tool.js";
 export { ToolRegistry } from "./tool-registry.js";
 export { httpTool } from "./http-tool.js";
 export { fileReaderTool } from "./file-reader-tool.js";

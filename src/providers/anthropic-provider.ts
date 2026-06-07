@@ -7,7 +7,7 @@
  */
 
 import type { ProviderConfig } from "../core/types.js";
-import type { ChatMessage, LLMProvider, LLMResponse } from "./provider.js";
+import type { GenerateOptions, ChatMessage, LLMProvider, LLMResponse } from "./provider.js";
 import {
   ProviderError,
   RateLimitError,
@@ -77,16 +77,16 @@ export class AnthropicProvider implements LLMProvider {
     return this.client;
   }
 
-  async generate(messages: ChatMessage[]): Promise<LLMResponse> {
+  async generate(messages: ChatMessage[], options?: GenerateOptions): Promise<LLMResponse> {
     return this.breaker.execute(() =>
-      withRetry(() => this._generate(messages), {
+      withRetry(() => this._generate(messages, options), {
         maxRetries: 3,
         baseDelayMs: 1000,
       })
     );
   }
 
-  private async _generate(messages: ChatMessage[]): Promise<LLMResponse> {
+  private async _generate(messages: ChatMessage[], _options?: GenerateOptions): Promise<LLMResponse> {
     const client = await this.getClient();
 
     // Anthropic API separates system prompt from messages

@@ -5,17 +5,52 @@
  * @module
  */
 
+import type { Tool } from "../tools/tool.js";
+
 // ─── Chat Message ───────────────────────────────────────────
 
 /** Role of a chat message participant */
-export type ChatRole = "system" | "user" | "assistant";
+export type ChatRole = "system" | "user" | "assistant" | "tool";
+
+/** Text content part */
+export interface ContentPartText {
+  type: "text";
+  text: string;
+}
+
+/** Image content part */
+export interface ContentPartImage {
+  type: "image_url";
+  image_url: {
+    url: string;
+  };
+}
+
+/** A part of a multi-modal message content */
+export type ContentPart = ContentPartText | ContentPartImage;
+
+/** A tool call request from the LLM */
+export interface ToolCall {
+  id: string;
+  type: "function";
+  function: {
+    name: string;
+    arguments: string; // JSON string representation
+  };
+}
 
 /** A single message in a chat conversation */
 export interface ChatMessage {
   /** Role of the message sender */
   role: ChatRole;
-  /** Text content of the message */
-  content: string;
+  /** Content of the message */
+  content?: string | ContentPart[];
+  /** Name of the author (used for tool responses or distinguishing users) */
+  name?: string;
+  /** Tool calls requested by the assistant */
+  tool_calls?: ToolCall[];
+  /** ID of the tool call this message is responding to */
+  tool_call_id?: string;
 }
 
 // ─── LLM Response ───────────────────────────────────────────
@@ -33,7 +68,9 @@ export interface TokenUsage {
 /** Response from an LLM provider */
 export interface LLMResponse {
   /** The generated text content */
-  content: string;
+  content?: string;
+  /** Tool calls requested by the model */
+  tool_calls?: ToolCall[];
   /** Token usage statistics (if available from provider) */
   usage?: TokenUsage;
   /** The model that was used */
@@ -42,21 +79,14 @@ export interface LLMResponse {
 
 // ─── LLM Provider Interface ────────────────────────────────
 
+/** Options passed to the generate call */
+export interface GenerateOptions {
+  /** Tools available for the model to call */
+  tools?: Tool[];
+}
+
 /**
  * Interface that all LLM providers must implement.
- *
- * @example
- * ```typescript
- * class MyProvider implements LLMProvider {
- *   readonly providerType = "custom";
- *   readonly modelName = "my-model";
- *
- *   async generate(messages: ChatMessage[]): Promise<LLMResponse> {
- *     // Call your LLM API
- *     return { content: "response", model: this.modelName };
- *   }
- * }
- * ```
  */
 export interface LLMProvider {
   /** The provider type identifier (e.g., "openai", "anthropic") */
@@ -69,7 +99,8 @@ export interface LLMProvider {
    * Generate a response from the LLM.
    *
    * @param messages - The conversation history
-   * @returns The LLM's response with optional usage info
+   * @param options - Generation options including tools
+   * @returns The LLM's response with optional usage and tool calls
    */
-  generate(messages: ChatMessage[]): Promise<LLMResponse>;
+  generate(messages: ChatMessage[], options?: GenerateOptions): Promise<LLMResponse>;
 }
