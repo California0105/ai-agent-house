@@ -9,6 +9,24 @@ import type { Tool } from "./tool.js";
 import { ToolError } from "../core/errors.js";
 
 /**
+ * Validates URLs to prevent SSRF against localhost, private IPs, and metadata endpoints.
+ */
+function isBlockedUrl(urlStr: string): boolean {
+  try {
+    const url = new URL(urlStr);
+    const hostname = url.hostname;
+    const blockedPatterns = [
+      /^localhost$/, /^127\.\d+\.\d+\.\d+$/, /^::1$/, 
+      /^169\.254\.\d+\.\d+$/, /^10\.\d+\.\d+\.\d+$/, 
+      /^192\.168\.\d+\.\d+$/, /^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$/
+    ];
+    return blockedPatterns.some(pattern => pattern.test(hostname));
+  } catch {
+    return true; // Block invalid URLs
+  }
+}
+
+/**
  * HTTP request tool.
  *
  * Allows agents to make HTTP GET/POST requests.
@@ -43,21 +61,31 @@ export const httpTool: Tool = {
       throw new ToolError("http_request", "URL is required");
     }
 
+    if (isBlockedUrl(url)) {
+      throw new ToolError("http_request", "Access denied: Request to internal or metadata network is forbidden");
+    }
+
     const method = (params.method as string) ?? "GET";
     const body = params.body as string | undefined;
     const headers = params.headers as
       | Record<string, string>
       | undefined;
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     try {
       const response = await fetch(url, {
         method: method.toUpperCase(),
+        signal: controller.signal,
         headers: {
           "User-Agent": "ai-agent-house/0.1",
           ...headers,
         },
         ...(body ? { body } : {}),
       });
+
+      clearTimeout(timeoutId);
 
       const text = await response.text();
 

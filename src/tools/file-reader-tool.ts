@@ -6,6 +6,7 @@
  */
 
 import { readFile, stat } from "node:fs/promises";
+import path from "node:path";
 import type { Tool } from "./tool.js";
 import { ToolError } from "../core/errors.js";
 
@@ -34,14 +35,20 @@ export const fileReaderTool: Tool = {
     },
   },
   async execute(params) {
-    const path = params.path as string | undefined;
-    if (!path) {
+    const requestedPath = params.path as string | undefined;
+    if (!requestedPath) {
       throw new ToolError("file_reader", "File path is required");
+    }
+
+    const allowedBaseDir = process.cwd();
+    const absolutePath = path.resolve(allowedBaseDir, requestedPath);
+    if (!absolutePath.startsWith(allowedBaseDir)) {
+      throw new ToolError("file_reader", "Access denied: Path is outside the allowed directory");
     }
 
     try {
       // Check file size first
-      const fileStat = await stat(path);
+      const fileStat = await stat(absolutePath);
       if (fileStat.size > MAX_FILE_SIZE) {
         throw new ToolError(
           "file_reader",
@@ -50,7 +57,7 @@ export const fileReaderTool: Tool = {
       }
 
       const encoding = (params.encoding as BufferEncoding) ?? "utf-8";
-      const content = await readFile(path, { encoding });
+      const content = await readFile(absolutePath, { encoding });
       return content;
     } catch (error) {
       if (error instanceof ToolError) throw error;
@@ -59,13 +66,13 @@ export const fileReaderTool: Tool = {
       if (err.code === "ENOENT") {
         throw new ToolError(
           "file_reader",
-          `File not found: ${path}`
+          `File not found: ${absolutePath}`
         );
       }
       if (err.code === "EACCES") {
         throw new ToolError(
           "file_reader",
-          `Permission denied: ${path}`
+          `Permission denied: ${absolutePath}`
         );
       }
 
