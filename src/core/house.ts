@@ -511,8 +511,6 @@ export class House {
       }
 
       return { message: responseMessage, tokens };
-    } catch (error) {
-      throw error;
     } finally {
       agent._setStatus("idle");
     }

@@ -40,7 +40,7 @@ export class GoogleProvider implements LLMProvider {
   private readonly maxTokens?: number;
   private readonly breaker: CircuitBreaker;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   private client: any = null;
 
   constructor(config: ProviderConfig) {
@@ -54,7 +54,7 @@ export class GoogleProvider implements LLMProvider {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   private async getClient(): Promise<any> {
     if (!this.client) {
       try {

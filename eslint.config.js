@@ -17,6 +17,10 @@ export default [
         process: "readonly",
         Date: "readonly",
         Error: "readonly",
+        setTimeout: "readonly",
+        NodeJS: "readonly",
+        BufferEncoding: "readonly",
+        fetch: "readonly",
       },
     },
     plugins: {

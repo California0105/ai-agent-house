@@ -22,7 +22,7 @@ import { MemoryError } from "../core/errors.js";
  * ```
  */
 export class SqliteMemoryProvider implements MemoryProvider {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   private db: any = null;
   private readonly dbPath: string;
 
@@ -30,7 +30,7 @@ export class SqliteMemoryProvider implements MemoryProvider {
     this.dbPath = dbPath;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   private async getDb(): Promise<any> {
     if (this.db) return this.db;
 

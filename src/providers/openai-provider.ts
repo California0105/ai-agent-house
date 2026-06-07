@@ -43,7 +43,7 @@ export class OpenAIProvider implements LLMProvider {
   private readonly breaker: CircuitBreaker;
 
   // Lazy-loaded OpenAI client (typed as `any` to avoid requiring SDK types at compile time)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   private client: any = null;
 
   constructor(config: ProviderConfig) {
@@ -62,7 +62,7 @@ export class OpenAIProvider implements LLMProvider {
    * Lazily initialize the OpenAI client.
    * Defers the import so the SDK is only loaded if actually used.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   private async getClient(): Promise<any> {
     if (!this.client) {
       try {

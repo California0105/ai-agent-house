@@ -16,11 +16,11 @@
  * @throws Error if the module is not installed
  * @internal
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export async function importModule(moduleName: string): Promise<any> {
   try {
     // Use Function constructor to prevent TS from resolving the module
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval, no-new-func
+     
     const dynamicImport = new Function(
       "moduleName",
       "return import(moduleName)"
