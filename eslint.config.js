@@ -18,9 +18,12 @@ export default [
         Date: "readonly",
         Error: "readonly",
         setTimeout: "readonly",
+        clearTimeout: "readonly",
         NodeJS: "readonly",
         BufferEncoding: "readonly",
         fetch: "readonly",
+        URL: "readonly",
+        AbortController: "readonly",
       },
     },
     plugins: {
