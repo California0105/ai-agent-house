@@ -8,4 +8,7 @@ export { ResearcherAgent } from "./researcher.js";
 export type { ResearcherAgentOptions } from "./researcher.js";
 
 export { HousekeeperAgent } from "./housekeeper.js";
-export type { HousekeeperAgentOptions } from "./housekeeper.js";
+export type {
+  HousekeeperAgentOptions,
+  SubTaskAssignment,
+} from "./housekeeper.js";

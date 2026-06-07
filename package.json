@@ -35,6 +35,14 @@
     "./memory": {
       "import": "./dist/memory/index.js",
       "types": "./dist/memory/index.d.ts"
+    },
+    "./providers": {
+      "import": "./dist/providers/index.js",
+      "types": "./dist/providers/index.d.ts"
+    },
+    "./tools": {
+      "import": "./dist/tools/index.js",
+      "types": "./dist/tools/index.d.ts"
     }
   },
   "files": [
@@ -66,6 +74,18 @@
     "tsup": "^8.4.0",
     "typescript": "^5.8.0",
     "vitest": "^4.1.8"
+  },
+  "peerDependencies": {
+    "openai": "^5.0.0",
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@google/generative-ai": "^0.24.0",
+    "better-sqlite3": "^11.0.0"
+  },
+  "peerDependenciesMeta": {
+    "openai": { "optional": true },
+    "@anthropic-ai/sdk": { "optional": true },
+    "@google/generative-ai": { "optional": true },
+    "better-sqlite3": { "optional": true }
   },
   "engines": {
     "node": ">=20.0.0"

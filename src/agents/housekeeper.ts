@@ -8,6 +8,7 @@
 
 import { Agent } from "../core/agent.js";
 import type { AgentConfig, BoardMessage } from "../core/types.js";
+import type { BulletinBoard } from "../memory/bulletin-board.js";
 
 /** Configuration options for HousekeeperAgent */
 export interface HousekeeperAgentOptions {
@@ -18,6 +19,18 @@ export interface HousekeeperAgentOptions {
 }
 
 /**
+ * Sub-task assignment from the coordinator.
+ */
+export interface SubTaskAssignment {
+  /** Target agent role (e.g., "researcher", "writer") */
+  targetRole: string;
+  /** Sub-task description */
+  task: string;
+  /** Priority */
+  priority: "low" | "normal" | "high";
+}
+
+/**
  * Housekeeper Agent — The wise coordinator.
  *
  * Specializes in:
@@ -25,6 +38,12 @@ export interface HousekeeperAgentOptions {
  * - Conflict resolution between agents
  * - Overall house management and optimization
  * - Synthesis of multiple agent outputs
+ *
+ * When used as a coordinator, the Housekeeper:
+ * 1. Analyzes incoming tasks
+ * 2. Breaks them into sub-tasks
+ * 3. Assigns sub-tasks to appropriate agents
+ * 4. Synthesizes the results
  *
  * @example
  * ```typescript
@@ -87,9 +106,11 @@ You are the glue that holds the house together. 🏠`,
     task: string,
     context: BoardMessage[]
   ): Promise<string> {
-    // Prompt ready for LLM integration: this.buildPrompt(task, context)
+    // Try LLM-powered processing first
+    const llmResult = await this.generateWithLLM(task, context);
+    if (llmResult) return llmResult;
 
-    // Analyze context from other agents
+    // Fallback: structured template response
     const agentResponses = context
       .filter(
         (m) => m.type === "response" && m.authorId !== "system"
@@ -132,5 +153,166 @@ You are the glue that holds the house together. 🏠`,
     ]
       .filter(Boolean)
       .join("\n");
+  }
+
+  /**
+   * Coordinate a complex task by analyzing it, delegating sub-tasks,
+   * collecting results, and synthesizing a final output.
+   *
+   * @param task - The main task to coordinate
+   * @param agents - Available agents to delegate to
+   * @param bulletinBoard - The shared bulletin board
+   * @returns The synthesized final result
+   */
+  async coordinateTask(
+    task: string,
+    agents: Agent[],
+    bulletinBoard: BulletinBoard
+  ): Promise<string> {
+    // Step 1: Analyze and create sub-task plan
+    const plan = this.createSubTaskPlan(task, agents);
+
+    // Step 2: Execute sub-tasks (each agent processes their part)
+    const results: Array<{
+      role: string;
+      agentName: string;
+      response: string;
+    }> = [];
+
+    for (const assignment of plan) {
+      const agent = agents.find(
+        (a) => a.role === assignment.targetRole
+      );
+      if (!agent) continue;
+
+      const context = bulletinBoard.getMessagesForAgent(
+        agent.id,
+        10
+      );
+
+      try {
+        const response = await agent.processTask(
+          assignment.task,
+          context
+        );
+        results.push({
+          role: agent.role,
+          agentName: agent.name,
+          response,
+        });
+
+        // Post sub-task result to bulletin board
+        bulletinBoard.post(agent.id, agent.name, response, {
+          type: "response",
+          priority: assignment.priority,
+          tags: ["coordinated", `subtask-${assignment.targetRole}`],
+        });
+      } catch (error) {
+        results.push({
+          role: agent.role,
+          agentName: agent.name,
+          response: `Error: ${error instanceof Error ? error.message : String(error)}`,
+        });
+      }
+    }
+
+    // Step 3: Synthesize results
+    return this.synthesizeResults(task, results);
+  }
+
+  /**
+   * Create a sub-task plan based on available agents.
+   * With LLM, this would use AI to analyze the task intelligently.
+   * Without LLM, uses capability-based heuristic matching.
+   */
+  private createSubTaskPlan(
+    task: string,
+    agents: Agent[]
+  ): SubTaskAssignment[] {
+    const assignments: SubTaskAssignment[] = [];
+    const taskLower = task.toLowerCase();
+
+    for (const agent of agents) {
+      if (agent.role === "housekeeper") continue;
+
+      // Check if this agent's capabilities match any part of the task
+      const isRelevant = agent.canHandle(task);
+      if (!isRelevant) continue;
+
+      let subTask: string;
+      switch (agent.role) {
+        case "researcher":
+          subTask = `Research and gather information about: ${task}`;
+          break;
+        case "writer":
+          subTask = `Create content/draft based on: ${task}`;
+          break;
+        case "secretary":
+          subTask = `Create an action plan and organize tasks for: ${task}`;
+          break;
+        default:
+          subTask = `Contribute your expertise to: ${task}`;
+      }
+
+      assignments.push({
+        targetRole: agent.role,
+        task: subTask,
+        priority:
+          taskLower.includes("urgent") ? "high" : "normal",
+      });
+    }
+
+    // If no specific agents matched, assign to all non-housekeeper agents
+    if (assignments.length === 0) {
+      for (const agent of agents) {
+        if (agent.role === "housekeeper") continue;
+        assignments.push({
+          targetRole: agent.role,
+          task: `Contribute your perspective on: ${task}`,
+          priority: "normal",
+        });
+      }
+    }
+
+    return assignments;
+  }
+
+  /**
+   * Synthesize results from multiple agents into a cohesive output.
+   */
+  private synthesizeResults(
+    task: string,
+    results: Array<{
+      role: string;
+      agentName: string;
+      response: string;
+    }>
+  ): string {
+    if (results.length === 0) {
+      return `🏠 **${this.name}**: No agent contributions received for task: "${task}"`;
+    }
+
+    const contributions = results
+      .map(
+        (r) =>
+          `### ${r.agentName} (${r.role})\n${r.response}`
+      )
+      .join("\n\n---\n\n");
+
+    return [
+      `🏠 **${this.name}'s Coordinated Summary**`,
+      "",
+      `**Original Task:** ${task}`,
+      "",
+      `**Contributions (${results.length} agents):**`,
+      "",
+      contributions,
+      "",
+      "---",
+      "",
+      `**${this.name}'s Synthesis:**`,
+      `All ${results.length} agents have contributed their expertise.`,
+      "The above outputs represent a comprehensive analysis from multiple perspectives.",
+    ].join("\n");
   }
 }

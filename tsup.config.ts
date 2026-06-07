@@ -5,6 +5,8 @@ export default defineConfig({
     "src/index.ts",
     "src/agents/index.ts",
     "src/memory/index.ts",
+    "src/providers/index.ts",
+    "src/tools/index.ts",
     "src/cli/index.ts",
   ],
   format: ["esm"],

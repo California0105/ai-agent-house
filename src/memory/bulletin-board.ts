@@ -193,23 +193,86 @@ export class BulletinBoard {
 
   /**
    * Get a thread of messages starting from a parent message.
+   * Recursively includes all nested replies.
    *
    * @param parentId - The root message ID
-   * @returns All messages in the thread
+   * @param maxDepth - Maximum depth of recursion (default: 10)
+   * @returns All messages in the thread, sorted chronologically
    */
-  getThread(parentId: string): BoardMessage[] {
+  getThread(parentId: string, maxDepth = 10): BoardMessage[] {
     const root = this.messages.find((m) => m.id === parentId);
     if (!root) return [];
 
-    const thread = [root];
-    const replies = this.messages.filter(
-      (m) => m.parentId === parentId
-    );
-    thread.push(...replies);
+    const thread: BoardMessage[] = [root];
+    this.collectReplies(parentId, thread, 0, maxDepth);
 
     return thread.sort(
       (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
     );
+  }
+
+  /**
+   * Recursively collect replies to a message.
+   * @internal
+   */
+  private collectReplies(
+    parentId: string,
+    thread: BoardMessage[],
+    depth: number,
+    maxDepth: number
+  ): void {
+    if (depth >= maxDepth) return;
+
+    const replies = this.messages.filter(
+      (m) => m.parentId === parentId
+    );
+
+    for (const reply of replies) {
+      if (!thread.some((m) => m.id === reply.id)) {
+        thread.push(reply);
+        this.collectReplies(reply.id, thread, depth + 1, maxDepth);
+      }
+    }
+  }
+
+  /**
+   * Get unread messages for an agent (messages posted after their lastReadId).
+   *
+   * @param agentId - The agent ID
+   * @param lastReadId - The ID of the last message the agent has read
+   * @param limit - Maximum number of messages to return
+   * @returns Unread messages for the agent, oldest first
+   */
+  getUnreadMessages(
+    agentId: string,
+    lastReadId?: string,
+    limit = 50
+  ): BoardMessage[] {
+    // Get messages visible to this agent
+    const visible = this.messages.filter(
+      (m) =>
+        !m.targetAgents ||
+        m.targetAgents.length === 0 ||
+        m.targetAgents.includes(agentId)
+    );
+
+    if (!lastReadId) {
+      // No read marker — return all visible messages
+      return visible.slice(-limit);
+    }
+
+    // Find the index of the last read message
+    const lastReadIndex = visible.findIndex(
+      (m) => m.id === lastReadId
+    );
+
+    if (lastReadIndex === -1) {
+      // Last read message not found — return all
+      return visible.slice(-limit);
+    }
+
+    // Return messages after the last read
+    return visible.slice(lastReadIndex + 1, lastReadIndex + 1 + limit);
   }
 
   /**

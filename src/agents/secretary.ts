@@ -85,11 +85,11 @@ When responding to a discussion:
     task: string,
     context: BoardMessage[]
   ): Promise<string> {
-    // Build a structured response based on the task
-    // Prompt ready for LLM integration: this.buildPrompt(task, context)
+    // Try LLM-powered processing first
+    const llmResult = await this.generateWithLLM(task, context);
+    if (llmResult) return llmResult;
 
-    // In a real implementation, this would call the LLM
-    // For now, return a structured placeholder that demonstrates the format
+    // Fallback: structured template response
     const contextSummary = context
       .filter((m) => m.type !== "system")
       .slice(0, 5)

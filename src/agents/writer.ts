@@ -98,8 +98,11 @@ When creating content:
     task: string,
     context: BoardMessage[]
   ): Promise<string> {
-    // Prompt ready for LLM integration: this.buildPrompt(task, context)
+    // Try LLM-powered processing first
+    const llmResult = await this.generateWithLLM(task, context);
+    if (llmResult) return llmResult;
 
+    // Fallback: structured template response
     const contextNotes = context
       .filter((m) => m.type === "response")
       .slice(0, 3)

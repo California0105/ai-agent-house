@@ -6,6 +6,8 @@
  */
 
 import { z } from "zod";
+import type { Tool } from "../tools/tool.js";
+import type { MemoryProvider } from "../memory/memory-provider.js";
 
 // ─── Agent Types ────────────────────────────────────────────
 
@@ -42,6 +44,8 @@ export interface AgentConfig {
   systemPrompt: string;
   /** Optional provider override (uses house provider by default) */
   provider?: ProviderConfig;
+  /** Optional tools available to this agent */
+  tools?: Tool[];
 }
 
 /** Current status of an agent */
@@ -115,6 +119,8 @@ export interface HouseConfig {
   maxRounds?: number;
   /** Enable verbose logging */
   verbose?: boolean;
+  /** Optional persistent memory provider */
+  memoryProvider?: MemoryProvider;
 }
 
 /** Result of a discussion */
@@ -131,6 +137,13 @@ export interface DiscussionResult {
   tokensUsed?: number;
   /** Duration in milliseconds */
   durationMs: number;
+  /** Detailed usage breakdown */
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+    cost?: number;
+  };
 }
 
 // ─── Zod Schemas (for runtime validation) ────────────────────

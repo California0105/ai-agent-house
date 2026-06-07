@@ -14,6 +14,14 @@ import type {
   BoardMessage,
   ProviderConfig,
 } from "./types.js";
+import type { LLMProvider, LLMResponse } from "../providers/provider.js";
+import type { Tool } from "../tools/tool.js";
+import { ToolRegistry } from "../tools/tool-registry.js";
+import { toolsToPrompt, parseToolCall } from "../tools/tool.js";
+import { ToolError } from "./errors.js";
+
+/** Maximum number of tool-calling iterations per task */
+const MAX_TOOL_ITERATIONS = 5;
 
 /**
  * Abstract base class for AI agents.
@@ -50,10 +58,30 @@ export abstract class Agent {
   /** Optional provider override */
   private _providerOverride?: ProviderConfig;
 
+  /** LLM Provider instance (injected by House or set manually) */
+  private _provider?: LLMProvider;
+
+  /** Tool registry for this agent */
+  private _toolRegistry?: ToolRegistry;
+
+  /** Last read message ID for tracking unread messages */
+  private _lastReadMessageId?: string;
+
+  /** Last LLM response (for usage tracking) */
+  private _lastResponse?: LLMResponse;
+
   constructor(config: AgentConfig) {
     this.id = nanoid(12);
     this.config = config;
     this._providerOverride = config.provider;
+
+    // Register tools from config
+    if (config.tools && config.tools.length > 0) {
+      this._toolRegistry = new ToolRegistry();
+      for (const tool of config.tools) {
+        this._toolRegistry.register(tool);
+      }
+    }
   }
 
   /** Agent's display name */
@@ -91,6 +119,21 @@ export abstract class Agent {
     return this._providerOverride;
   }
 
+  /** Whether this agent has an LLM provider attached */
+  get hasProvider(): boolean {
+    return this._provider !== undefined;
+  }
+
+  /** Last LLM response (for usage tracking) */
+  get lastResponse(): LLMResponse | undefined {
+    return this._lastResponse;
+  }
+
+  /** Last read message ID */
+  get lastReadMessageId(): string | undefined {
+    return this._lastReadMessageId;
+  }
+
   /**
    * Get the current state of this agent.
    */
@@ -120,6 +163,79 @@ export abstract class Agent {
     task: string,
     context: BoardMessage[]
   ): Promise<string>;
+
+  /**
+   * Process a task using the LLM provider (if available).
+   *
+   * This method builds the prompt, calls the LLM, and handles tool calls.
+   * Subclasses can call this from their processTask() to use LLM generation.
+   *
+   * @param task - The task to process
+   * @param context - Context messages from the bulletin board
+   * @returns The LLM's response, or null if no provider is available
+   */
+  protected async generateWithLLM(
+    task: string,
+    context: BoardMessage[]
+  ): Promise<string | null> {
+    if (!this._provider) return null;
+
+    const messages = this.buildPrompt(task, context);
+
+    // Add tool descriptions to the prompt if tools are available
+    const tools = this._toolRegistry?.list() ?? [];
+    if (tools.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg) {
+        lastMsg.content += "\n\n" + toolsToPrompt(tools);
+      }
+    }
+
+    // LLM call with tool-calling loop
+    let response = await this._provider.generate(messages);
+    this._lastResponse = response;
+
+    // Handle tool calls iteratively
+    if (tools.length > 0 && this._toolRegistry) {
+      let iterations = 0;
+      let toolCall = parseToolCall(response.content);
+
+      while (toolCall && iterations < MAX_TOOL_ITERATIONS) {
+        const tool = this._toolRegistry.get(toolCall.tool);
+        if (!tool) {
+          // Unknown tool, break out
+          break;
+        }
+
+        let toolResult: string;
+        try {
+          toolResult = await tool.execute(toolCall.params);
+        } catch (error) {
+          toolResult =
+            error instanceof ToolError
+              ? error.message
+              : `Error: ${error instanceof Error ? error.message : String(error)}`;
+        }
+
+        // Feed tool result back to LLM
+        messages.push({
+          role: "assistant",
+          content: response.content,
+        });
+        messages.push({
+          role: "user",
+          content: `Tool "${toolCall.tool}" returned:\n${toolResult}`,
+        });
+
+        response = await this._provider.generate(messages);
+        this._lastResponse = response;
+        iterations++;
+        toolCall = parseToolCall(response.content);
+      }
+    }
+
+    return response.content;
+  }
 
   /**
    * Determine if this agent can handle the given task.
@@ -194,5 +310,46 @@ export abstract class Agent {
    */
   _incrementProcessed(): void {
     this._messagesProcessed++;
+  }
+
+  /**
+   * Set the LLM provider for this agent.
+   * @internal Called by House during agent registration.
+   */
+  _setProvider(provider: LLMProvider): void {
+    this._provider = provider;
+  }
+
+  /**
+   * Get the LLM provider (for internal use).
+   * @internal
+   */
+  _getProvider(): LLMProvider | undefined {
+    return this._provider;
+  }
+
+  /**
+   * Add a tool to this agent's registry.
+   */
+  addTool(tool: Tool): void {
+    if (!this._toolRegistry) {
+      this._toolRegistry = new ToolRegistry();
+    }
+    this._toolRegistry.register(tool);
+  }
+
+  /**
+   * Get the tool registry.
+   */
+  getTools(): Tool[] {
+    return this._toolRegistry?.list() ?? [];
+  }
+
+  /**
+   * Mark a message as read.
+   * @internal
+   */
+  _markRead(messageId: string): void {
+    this._lastReadMessageId = messageId;
   }
 }
